@@ -1,4 +1,6 @@
 import serial
+import socket
+import struct
 
 dakSports = {
     'auto racing': {},
@@ -238,13 +240,46 @@ dakSports = {
     'wrestling': {}
 }
 
+DAKUDP_IP = "224.51.105.104"
+
+
+class DakSerial(object):
+    def __init__(self, data=None):
+        if type(data) is serial.Serial:
+            self.data = data
+        elif type(data) is str:
+            self.data = serial.Serial(data, baudrate=19200, timeout=1)
+        else:
+            self.data = serial.Serial("COM1", baudrate=19200, timeout=1)
+
+    def read(self):
+        rtd = b''
+        c = b''
+        while c != b'\x16':
+            c = self.data.read()
+        c = b'\x16'
+        while c != b'\x17':
+            c = self.data.read()
+            rtd += c
+        return rtd
+
+
+class DakUDP(object):
+    def __init__(self, data=21000):
+        self.data = None
+        self.data = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        self.data.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.data.bind(('', data))
+        mreq = struct.pack("=4sl", socket.inet_aton(DAKUDP_IP), socket.INADDR_ANY)
+        self.data.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+
+    def read(self):
+        return self.data.recv(1024)
+
 
 class Daktronics(object):
-    def __init__(self, sport, ser=None):
-        if ser is not None:
-            self.Serial = ser
-        else:
-            self.Serial = serial.Serial("COM1", 19200)
+    def __init__(self, sport, data):
+        self.dakrtd = data
         self.header = b''
         self.code = b''
         self.rtd = b''
@@ -254,14 +289,7 @@ class Daktronics(object):
         self.dakString = " " * self.sport['dakSize'][1]
 
     def update(self):
-        c = b''
-        self.rtd = b''
-        while c != b'\x16':
-            c = self.Serial.read()
-        c = b'\x16'
-        while c != b'\x17':
-            c = self.Serial.read()
-            self.rtd += c
+        self.rtd = self.dakrtd.read()
 
         self.header = self.rtd.partition(b'\x16')[2].partition(b'\x01')[0]
         self.code = self.rtd.partition(b'\x01')[2].partition(b'\x02')[0].partition(b'\x04')[0]
@@ -280,11 +308,13 @@ class Daktronics(object):
 
 
 if __name__ == '__main__':
-    dak = Daktronics("football")
+    print("UDP MULTICAST 21000")
+    dakdata = DakUDP(21000)
+    dak = Daktronics("hockey/lacrosse", dakdata)
     while True:
         dak.update()
         print("--------------------------------------------------------------")
-        print(dak['Main Clock Time [mm:ss/ss.t]'])
+        print(dak['Main Clock Time (mm:ss/ss.t )'])
         print(dak['Home Team Name'], dak['Home Team Score'])
         print(dak['Guest Team Name'], dak['Guest Team Score'])
         print("--------------------------------------------------------------")

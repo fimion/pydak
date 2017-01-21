@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name='pydak',
     version='0.1',
-    packages=['serial'],
+    packages=['pyserial'],
     url='https://github.com/fimion/pydak',
     license='MIT',
     author='Alex Riviere',
