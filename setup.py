@@ -1,9 +1,10 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name='pydak',
     version='0.1',
-    packages=['pyserial'],
+    # packages=[''],
+    install_requires=['pyserial'],
     url='https://github.com/fimion/pydak',
     license='MIT',
     author='Alex Riviere',
