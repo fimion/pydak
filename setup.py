@@ -2,8 +2,8 @@ from setuptools import setup
 
 setup(
     name='pydak',
-    version='0.1',
-    # packages=[''],
+    version='0.2',
+    packages=['daktronics'],
     install_requires=['pyserial'],
     url='https://github.com/fimion/pydak',
     license='MIT',
